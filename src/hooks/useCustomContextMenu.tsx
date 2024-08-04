@@ -3,6 +3,7 @@ import { XYPosition, useReactFlow } from "@xyflow/react";
 
 export type ContextMenuComponentProps = React.FC<{
   closeMenu: () => void;
+  contentMenuMousePos: XYPosition;
   [k: string]: any;
 }>;
 
@@ -19,7 +20,10 @@ export default function useCustomContextMenu() {
 
   const isOpen = contextMenu !== null;
 
-  const show = (e: React.MouseEvent, component: ContextMenuComponentProps) => {
+  const show = (
+    e: MouseEvent | React.MouseEvent,
+    component: ContextMenuComponentProps
+  ) => {
     const mousePos: XYPosition = { x: e.clientX, y: e.clientY };
     const converted = reactFlowInstance.screenToFlowPosition(mousePos);
     console.log(
@@ -44,7 +48,10 @@ export default function useCustomContextMenu() {
             autoFocus
             onBlur={hide}
           >
-            <contextMenu.component closeMenu={hide} />
+            <contextMenu.component
+              closeMenu={hide}
+              contentMenuMousePos={contextMenu.pos}
+            />
           </div>
         ) : null}
       </>

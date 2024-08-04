@@ -15,51 +15,48 @@ import {
   XYPosition,
   ReactFlowProvider,
   Panel,
+  OnConnectStartParams,
+  OnConnectEnd,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import nodeTypes from "./Nodes/nodeTypes";
+import "@xyflow/react/dist/base.css"; //*Required
+// import "@xyflow/react/dist/style.css";
+import { nodeTypes, NODE_DEFINITIONS, NodeTypeId } from "./Nodes/nodeTypes";
 import { useLLMContext } from "../contexts/LLMContext";
 import useCustomContextMenu from "../hooks/useCustomContextMenu";
+import useAddNodeOnEdgeDrop from "../hooks/useAddNodeOnEdgeDrop";
+import useFlowUtils from "../hooks/useFlowUtils";
+import SaveLoadPanel from "./SaveLoadPanel";
 
 const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: "llm",
-    position: { x: 250, y: 5 },
-    data: { label: "Node 1" },
-  },
-  {
-    id: "2",
-    type: "llm",
-    position: { x: 250, y: 7 },
-    data: { label: "Node 2" },
-  },
+  // {
+  //   id: "1",
+  //   type: "llm",
+  //   position: { x: 250, y: 5 },
+  //   data: {},
+  // },
+  // {
+  //   id: "2",
+  //   type: "llm",
+  //   position: { x: 250, y: 7 },
+  //   data: {},
+  // },
 ];
 
 function MainFlow() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  //   const reactFlowInstance = useReactFlow();
+  // const addNodeOnEdgeDrop = useAddNodeOnEdgeDrop();
+
+  const reactFlowInstance = useReactFlow();
   const contextMenu = useCustomContextMenu();
 
-  const createNewNode = (position: XYPosition) => {
-    const newNode: Node = {
-      id: `${Date.now()}`,
-      type: "custom",
-      position,
-      data: { label: `Node ${nodes.length + 1}` },
-    };
-    setNodes((nds) => nds.concat(newNode));
-  };
-
-  //   const createNewNodeAtMousePosition = (event: React.MouseEvent) => {
-  //     const position = reactFlowInstance.screenToFlowPosition({
-  //       x: event.clientX,
-  //       y: event.clientY,
-  //     });
-  //     createNewNode(position);
-  //   };
+  // const onConnectStart = useCallback(
+  //   (e: MouseEvent | TouchEvent, params: OnConnectStartParams) => {
+  //     // addNodeOnEdgeDrop.setConnectingNodeId(params.nodeId);
+  //   },
+  //   []
+  // );
 
   //   const onConnect = useCallback(
   //     (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
@@ -67,9 +64,17 @@ function MainFlow() {
   //   );
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) => {
+      setEdges((eds) => addEdge(params, eds));
+      // addNodeOnEdgeDrop.onConnect();
+      // addNodeOnEdgeDrop.setConnectingNodeId(null);
+    },
     [setEdges]
   );
+
+  // const onConnectEnd = useCallback((e: MouseEvent) => {
+  //   addNodeOnEdgeDrop.onConnectEnd(e);
+  // }, []);
 
   const handlePaneClick = () => {
     if (contextMenu.isOpen) {
@@ -91,7 +96,7 @@ function MainFlow() {
   //     [setNodes]
   //   );
 
-  const handlePaneContextMenu = (event: React.MouseEvent) => {
+  const handlePaneContextMenu = (event: MouseEvent | React.MouseEvent) => {
     console.log("handlePaneContextMenu");
     event.preventDefault();
     contextMenu.show(event, PaneContextMenu);
@@ -100,16 +105,22 @@ function MainFlow() {
   return (
     <div className="w-screen h-screen">
       <ReactFlow
+        // colorMode="dark"
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        // onConnectStart={onConnectStart}
+        // onConnectEnd={onConnectEnd as OnConnectEnd}
         onPaneClick={handlePaneClick}
-        // onPaneContextMenu={handlePaneContextMenu}
+        onPaneContextMenu={handlePaneContextMenu}
         nodeTypes={nodeTypes}
         fitView
       >
+        <Panel position="top-left">
+          <SaveLoadPanel />
+        </Panel>
         <Background />
         <Controls />
         <contextMenu.ContextMenu />
@@ -127,6 +138,40 @@ export default function MainFlowWrapper() {
   );
 }
 
-function PaneContextMenu(props: { closeMenu: () => void }) {
-  return <div className="w-40 h-60 border-2 bg-inherit">hi</div>;
+function PaneContextMenu(props: {
+  //TODO: Move to own module
+  closeMenu: () => void;
+  contentMenuMousePos: XYPosition;
+}) {
+  const flowUtils = useFlowUtils();
+
+  //TODO: Only using the NewNode menu at the moment; The menu UI and component structure may require refactoring when adding submenus/state to the PaneContextMenu component. e.g. SubMenu component that takes title and items
+  const NewNodeSubMenu = () => {
+    const onCreateNewNode = (nodeTypeId: NodeTypeId) => {
+      flowUtils.createNewNode(nodeTypeId, props.contentMenuMousePos);
+      props.closeMenu();
+    };
+
+    return (
+      <>
+        <h3 className="menu-title">New Node:</h3>
+        <ul className="menu">
+          {Object.keys(NODE_DEFINITIONS).map((k, i) => {
+            const nodeDef = NODE_DEFINITIONS[k];
+            return (
+              <li onClick={() => onCreateNewNode(k)} key={k}>
+                <a>{nodeDef.name}</a>
+              </li>
+            );
+          })}
+        </ul>
+      </>
+    );
+  };
+
+  return (
+    <div className="w-40 h-60 border-2 bg-white bg-opacity-100 rounded-box drop-shadow size-fit p-4">
+      <NewNodeSubMenu />
+    </div>
+  );
 }

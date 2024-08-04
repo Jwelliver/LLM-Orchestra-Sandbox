@@ -2,11 +2,12 @@
 
 # MVP
 
-- [] Finished Conditions:
+- [x] Finished Conditions:
 
   - [x] Can execute a simple chained llm call
-  - [] Can save and restore graphs
+  - [x] Can save and restore graphs
 
+- [] Add create node on drop
 - [] Add api key input for single provider (options come later)
 - [] finish basic llmNode
 

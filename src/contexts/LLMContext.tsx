@@ -51,7 +51,7 @@ export function LLMAPIContextProvider(props: React.PropsWithChildren) {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        max_tokens: 512,
+        max_tokens: 200, //! Hardcoded low to limit runaway calls when testing.
         messages: [
           {
             role: "user",
